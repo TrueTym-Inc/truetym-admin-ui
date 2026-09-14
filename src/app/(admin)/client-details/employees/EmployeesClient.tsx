@@ -28,6 +28,7 @@ import {
   changeEmployeeCode,
   createEmployeeContext,
   deactivateEmployee,
+  fetchAssignableRoles,
   fetchEmployees,
   getEmployeeStatusBadgeClass,
   getEmployeeStatusLabel,
@@ -37,6 +38,15 @@ import {
   updateEmployeeRole,
   UserStatusEnum,
 } from '@/lib/employee';
+
+// Static — matches backend UserTypesEnum exactly. Payload value is the enum
+// number (100/101/102/103), label is just for display.
+const USER_TYPE_OPTIONS: { value: number; label: string }[] = [
+  { value: 100, label: 'Employee' },
+  { value: 101, label: 'Contractor' },
+  { value: 102, label: 'Agency Admin' },
+  { value: 103, label: 'Organisation Admin' },
+];
 
 type Section = 'employee' | 'contractor';
 
@@ -147,7 +157,7 @@ export default function EmployeesClient() {
     setOpenMenu({
       id: empId,
       top: rect.bottom + window.scrollY + 4,
-      left: rect.right + window.scrollX - 224, // 224px = menu width (w-56)
+      left: rect.right + window.scrollX - 224,
     });
   };
 
@@ -158,8 +168,6 @@ export default function EmployeesClient() {
   const handleCreateContext = (emp: Employee) =>
     runAction(() => createEmployeeContext(organizationId!, emp.id));
 
-  // Super-admin hard-delete: hand off to the offboarding panel as a user target.
-  // Uses the query-param contract the OffboardingPanel reads (emp_id → user tab).
   const handleDelete = (id: string) => {
     router.push(`/offboarding?emp_id=${id}`);
   };
@@ -182,6 +190,7 @@ export default function EmployeesClient() {
             <div className="flex w-fit gap-1 rounded-lg bg-gray-100 p-1">
               {(['employee', 'contractor'] as Section[]).map((s) => (
                 <button
+                  type="button"
                   key={s}
                   onClick={() => {
                     setSection(s);
@@ -198,7 +207,6 @@ export default function EmployeesClient() {
               ))}
             </div>
 
-            {/* Stat bar */}
             <div className="flex w-fit items-center gap-2 rounded-lg border bg-white px-4 py-1">
               <Users size={16} className="text-teal-600" />
               <span className="text-sm text-gray-600">
@@ -264,9 +272,7 @@ export default function EmployeesClient() {
                   {employees.map((emp) => {
                     const isDeleted = emp.deleted === 1;
                     const status = emp.status ?? -1;
-                    // const offboardable = canOffboardEmployee(status, emp.deleted);
                     const isActive = Number(emp.is_active) === 1;
-                    const hasContext = Number(emp.has_context) === 1;
                     const isXEmployee = status === UserStatusEnum.XEmployee;
 
                     return (
@@ -304,37 +310,14 @@ export default function EmployeesClient() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            {!hasContext && !isDeleted ? (
-                              <button
-                                onClick={() => handleCreateContext(emp)}
-                                className="mr-2 inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
-                              >
-                                <Link2 className="h-3 w-3" />
-                                Link context
-                              </button>
-                            ) : null}
-
-                            {/* Super-admin only: hard-delete via offboarding panel */}
-                            {isSuperAdmin && !isDeleted && (
-                              <button
-                                onClick={() => handleDelete(emp.id)}
-                                className="mr-1 rounded p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600"
-                                aria-label="Delete employee (offboarding)"
-                                title="Delete employee"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-
-                            <button
-                              onClick={(e) => toggleMenu(emp.id, e)}
-                              className="rounded p-1.5 text-gray-500 hover:bg-gray-100"
-                              aria-label="Employee actions"
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={(e) => toggleMenu(emp.id, e)}
+                            className="rounded p-1.5 text-gray-500 hover:bg-gray-100"
+                            aria-label="Employee actions"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -460,6 +443,7 @@ export default function EmployeesClient() {
             </span>
             <div className="flex gap-2">
               <button
+                type="button"
                 disabled={pageNumber === 1}
                 onClick={() => setPageNumber((p) => p - 1)}
                 className="rounded border px-3 py-1 disabled:opacity-50"
@@ -467,6 +451,7 @@ export default function EmployeesClient() {
                 Previous
               </button>
               <button
+                type="button"
                 disabled={pageNumber >= Math.ceil(totalItems / pageSize)}
                 onClick={() => setPageNumber((p) => p + 1)}
                 className="rounded border px-3 py-1 disabled:opacity-50"
@@ -501,8 +486,8 @@ export default function EmployeesClient() {
           onSaveDetails={(emp, body) =>
             runAction(() => updateEmployeeBasicDetails(organizationId, emp.id, body))
           }
-          onSaveRole={(emp, roleId, roleType) =>
-            runAction(() => updateEmployeeRole(organizationId, emp.id, roleId, roleType))
+          onSaveRole={(emp, roleId, roleType, typeId) =>
+            runAction(() => updateEmployeeRole(organizationId, emp.id, roleId, roleType, typeId))
           }
         />
       )}
@@ -523,6 +508,7 @@ function MenuItem({
 }>) {
   return (
     <button
+      type="button"
       onClick={onClick}
       className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-gray-50 ${
         danger ? 'text-red-600' : 'text-gray-700'
@@ -568,6 +554,7 @@ function ModalShell({
 
 function ActionModal({
   modal,
+  orgId,
   busy,
   error,
   onClose,
@@ -591,10 +578,13 @@ function ActionModal({
     emp: Employee,
     body: { firstName?: string; lastName?: string; emailId?: string; address?: string },
   ) => void;
-  onSaveRole: (emp: Employee, roleId: string, roleType: number) => void;
+  onSaveRole: (emp: Employee, roleId: string, roleType: number, typeId: number) => void;
 }>) {
-  const initialDialCode = (modal.emp.dial_code || '').replace('+', '');
-  const [dialCode, setDialCode] = useState(initialDialCode || '91');
+  const normalizeDialCode = (code?: string) => {
+    if (!code) return '+91';
+    return code.startsWith('+') ? code : `+${code}`;
+  };
+  const [dialCode, setDialCode] = useState(normalizeDialCode(modal.emp.dial_code));
   const [phoneNumber, setPhoneNumber] = useState(modal.emp.phone_number || '');
   const [userCode, setUserCode] = useState(modal.emp.user_code || '');
   const [codePrefix, setCodePrefix] = useState(modal.emp.code_prefix || '');
@@ -603,9 +593,38 @@ function ActionModal({
     modal.emp.display_name?.split(' ').slice(1).join(' ') || '',
   );
   const [emailId, setEmailId] = useState(modal.emp.email_id || '');
+
+  // ---- Role modal state ----
   const [roleId, setRoleId] = useState(modal.emp.role_id || '');
-  // Wire this list up to your actual role-master fetch — placeholder shape shown.
-  const [roles] = useState<RoleOption[]>([]);
+  const [typeId, setTypeId] = useState<number | ''>(
+    (modal.emp as any).employeeTypeId !== undefined
+      ? Number((modal.emp as any).employeeTypeId)
+      : '',
+  );
+  const [roles, setRoles] = useState<RoleOption[]>([]);
+  const [rolesLoading, setRolesLoading] = useState(false);
+  const [rolesError, setRolesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (modal.type !== 'role') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setRolesLoading(true);
+        setRolesError(null);
+        const data = await fetchAssignableRoles(orgId);
+        if (!cancelled) setRoles(data);
+      } catch (err) {
+        if (!cancelled) setRolesError(err instanceof Error ? err.message : 'Failed to load roles');
+      } finally {
+        if (!cancelled) setRolesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modal.type, orgId]);
 
   if (modal.type === 'confirm-offboard') {
     return (
@@ -615,6 +634,7 @@ function ActionModal({
           their account. This can be reviewed later but is a significant action.
         </p>
         <button
+          type="button"
           disabled={busy}
           onClick={() => onConfirmOffboard(modal.emp)}
           className="w-full rounded bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
@@ -735,25 +755,64 @@ function ActionModal({
   }
 
   if (modal.type === 'role') {
+    // Treat missing/undefined the same as null (unlocked) — don't let a
+    // backend response that omits type_id silently empty the whole list.
+    const isUnlocked = (r: RoleOption) => r.type_id === null || r.type_id === undefined;
+
+    const rolesForType = roles.filter(
+      (r) => typeId === '' || isUnlocked(r) || r.type_id === typeId,
+    );
+
     return (
-      <ModalShell title="Change role" onClose={onClose} error={error}>
+      <ModalShell title="Change role" onClose={onClose} error={error || rolesError}>
+        <label className="mb-1 block text-xs font-medium text-gray-500">User type</label>
         <select
-          value={roleId}
-          onChange={(e) => setRoleId(e.target.value)}
+          value={typeId}
+          onChange={(e) => {
+            const next = e.target.value === '' ? '' : Number(e.target.value);
+            setTypeId(next);
+            setRoleId('');
+          }}
+          disabled={rolesLoading}
           className="mb-3 w-full rounded border px-3 py-2 text-sm"
         >
-          <option value="">Select role…</option>
-          {roles.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.role_name}
+          <option value="">Select user type…</option>
+          {USER_TYPE_OPTIONS.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>
+
+        <label className="mb-1 block text-xs font-medium text-gray-500">Role</label>
+        <select
+          value={roleId}
+          onChange={(e) => setRoleId(e.target.value)}
+          disabled={rolesLoading || typeId === ''}
+          className="mb-3 w-full rounded border px-3 py-2 text-sm"
+        >
+          <option value="">
+            {rolesLoading
+              ? 'Loading roles…'
+              : typeId === ''
+                ? 'Select user type first…'
+                : 'Select role…'}
+          </option>
+          {rolesForType.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.role_name}
+              {r.role_type === 101 ? ' (Custom)' : ''}
+            </option>
+          ))}
+        </select>
+
         <button
-          disabled={busy || !roleId}
+          disabled={busy || !roleId || typeId === ''}
           onClick={() => {
             const selected = roles.find((r) => r.id === roleId);
-            if (selected) onSaveRole(modal.emp, selected.id, selected.role_type);
+            if (selected && typeId !== '') {
+              onSaveRole(modal.emp, selected.id, selected.role_type, typeId);
+            }
           }}
           className="w-full rounded bg-teal-600 px-3 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
         >

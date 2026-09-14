@@ -31,6 +31,7 @@ export interface RoleOption {
   id: string;
   role_name: string;
   role_type: number;
+  type_id?: number | null;
 }
 
 export interface EmployeeListItem {

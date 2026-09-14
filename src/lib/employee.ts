@@ -1,6 +1,12 @@
-import { EmployeeListParams, EmployeeListResponse, EmployeesResponse } from '@/types/employee';
+import {
+  EmployeeListParams,
+  EmployeeListResponse,
+  EmployeesResponse,
+  RoleOption,
+} from '@/types/employee';
 import { getHeaders } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/endpoint';
+import { getJson, putJson } from '@/lib/http-client';
 
 // ---------------------------------------------------------------------------
 // UserStatusEnum (matches your backend constant)
@@ -201,10 +207,16 @@ export const createEmployeeContext = (orgId: string, empId: string) =>
 
 export const updateEmployeeRole = (
   orgId: string,
-  empId: string,
+  employeeId: string,
   roleId: string,
   roleType: number,
-) => adminAction(`/organisations/${orgId}/employees/${empId}/role`, 'PUT', { roleId, roleType });
+  typeId: number,
+) =>
+  putJson(`/organisations/${orgId}/employees/${employeeId}/role`, {
+    roleId,
+    roleType,
+    typeId,
+  });
 
 export const updateEmployeeBasicDetails = (
   orgId: string,
@@ -219,3 +231,8 @@ export const updateEmployeeBasicDetails = (
     address?: string;
   },
 ) => adminAction(`/organisations/${orgId}/employees/${empId}/basic-details`, 'PUT', body);
+
+export async function fetchAssignableRoles(orgId: string): Promise<RoleOption[]> {
+  const envelope = await getJson<RoleOption[]>(`/organisations/${orgId}/roles`);
+  return envelope.data;
+}
