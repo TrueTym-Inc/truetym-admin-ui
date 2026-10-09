@@ -1,6 +1,8 @@
 import { getHeaders } from '@/lib/api';
 import { API_BASE_URL } from '@/lib/endpoint';
 
+export type OrgModeFilter = 'all' | 'auto' | 'manual';
+
 // ─────────────────────────────────────────────────────────────
 // DISCOUNT / REFERRAL — admin authoring & control
 // ─────────────────────────────────────────────────────────────
@@ -132,7 +134,7 @@ export async function cancelOrgDiscount(orgDiscountId: string) {
   }
 }
 
-// List discounts assigned to a specific org (for the assign dialog + audit)
+// List discounts assigned to a specific org (for audit)
 export async function listOrgDiscounts(organisationId: string) {
   try {
     const url = `${API_BASE_URL}/admin/discounts/org/${organisationId}`;
@@ -155,8 +157,16 @@ export async function listOrgDiscounts(organisationId: string) {
   }
 }
 
-export async function searchAssignableOrgs(q: string) {
-  const url = `${API_BASE_URL}/admin/discounts/assignable-orgs?q=${encodeURIComponent(q)}`;
+export async function listDiscountOrgs(discountMasterId: string) {
+  const url = `${API_BASE_URL}/admin/discounts/${discountMasterId}/orgs`;
+  const response = await fetch(url, { method: 'GET', headers: getHeaders() });
+  if (!response.ok) throw new Error(`API returned ${response.status}`);
+  return response.json();
+}
+
+export async function searchAssignableOrgs(q: string, mode: OrgModeFilter = 'all') {
+  const params = new URLSearchParams({ q, mode });
+  const url = `${API_BASE_URL}/admin/discounts/assignable-orgs?${params.toString()}`;
   const response = await fetch(url, { method: 'GET', headers: getHeaders() });
   if (!response.ok) throw new Error(`API returned ${response.status}`);
   return response.json();
