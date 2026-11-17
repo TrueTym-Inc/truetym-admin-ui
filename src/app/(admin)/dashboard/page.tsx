@@ -101,7 +101,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
-  const [months, setMonths] = useState('6');
+  const [months, setMonths] = useState('3');
 
   // Auth check on mount (unchanged from previous dashboard)
   useEffect(() => {
@@ -258,7 +258,7 @@ export default function DashboardPage() {
           {/* ---------- KPI row: customers ---------- */}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
             <Kpi
-              title="Total customers"
+              title="Active customers"
               value={String(data.summary.totalOrgs)}
               sub={`${data.summary.totalSeats} seats`}
               icon={Users}
@@ -431,8 +431,9 @@ export default function DashboardPage() {
                         {u.mode}
                       </p>
                     </div>
+
                     <span className="text-xs font-medium text-blue-700">
-                      {daysFromNow(u.dueAt)}d{u.kind === 'renewal' ? ` · ${inr(u.amount)}` : ''}
+                      {daysFromNow(u.dueAt)}d · {inr(u.amount)}
                     </span>
                   </button>
                 ))}
