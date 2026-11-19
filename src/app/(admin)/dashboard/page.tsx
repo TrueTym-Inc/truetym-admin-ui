@@ -421,7 +421,7 @@ export default function DashboardPage() {
                 {data.upcoming.list.map((u) => (
                   <button
                     key={u.id}
-                    onClick={() => router.push(`/client-details/billing?id=${u.id}`)}
+                    onClick={() => router.push(`/billing?id=${u.id}`)}
                     className="flex w-full items-center justify-between text-left hover:bg-gray-50"
                   >
                     <div>
@@ -451,7 +451,7 @@ export default function DashboardPage() {
                 {data.expired.list.map((e) => (
                   <button
                     key={e.id}
-                    onClick={() => router.push(`/client-details/billing?id=${e.id}`)}
+                    onClick={() => router.push(`/billing?id=${e.id}`)}
                     className="flex w-full items-center justify-between text-left hover:bg-gray-50"
                   >
                     <div>
@@ -477,7 +477,7 @@ export default function DashboardPage() {
                 {data.cancelled.list.map((c) => (
                   <button
                     key={c.id}
-                    onClick={() => router.push(`/client-details/billing?id=${c.id}`)}
+                    onClick={() => router.push(`/billing?id=${c.id}`)}
                     className="flex w-full items-center justify-between text-left hover:bg-gray-50"
                   >
                     <div>
