@@ -221,3 +221,97 @@ body {
 .input {
   @apply w-full rounded-lg border border-gray-300 bg-white p-3 font-medium text-black focus:ring-2 focus:ring-teal-400/60 focus:outline-none;
 }
+
+/*
+  Shared typography for What's New entries. The same class styles the TipTap
+  editing surface and the read-only preview, so what staff type is what
+  tenants see.
+*/
+.whats-new-content {
+  @apply text-sm leading-relaxed text-gray-700;
+}
+
+.whats-new-content :where(h1) {
+  @apply mt-5 mb-2 text-2xl font-bold tracking-tight text-gray-900 first:mt-0;
+}
+
+.whats-new-content :where(h2) {
+  @apply mt-5 mb-2 text-xl font-bold tracking-tight text-gray-900 first:mt-0;
+}
+
+.whats-new-content :where(h3) {
+  @apply mt-4 mb-1.5 text-base font-semibold text-gray-900 first:mt-0;
+}
+
+.whats-new-content :where(h4) {
+  @apply mt-4 mb-1.5 text-sm font-semibold text-gray-900 first:mt-0;
+}
+
+.whats-new-content :where(p) {
+  @apply my-2 first:mt-0 last:mb-0;
+}
+
+.whats-new-content :where(ul) {
+  @apply my-2 list-disc space-y-1 pl-5;
+}
+
+.whats-new-content :where(ol) {
+  @apply my-2 list-decimal space-y-1 pl-5;
+}
+
+.whats-new-content :where(li) :where(p) {
+  @apply my-0;
+}
+
+.whats-new-content :where(a) {
+  @apply font-medium text-teal-700 underline decoration-teal-300 underline-offset-2 hover:text-teal-800;
+}
+
+.whats-new-content :where(strong, b) {
+  @apply font-semibold text-gray-900;
+}
+
+.whats-new-content :where(blockquote) {
+  @apply my-3 border-l-4 border-teal-200 bg-teal-50/50 py-2 pr-3 pl-4 text-gray-700 italic;
+}
+
+.whats-new-content :where(code) {
+  @apply rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[0.85em] text-gray-800;
+}
+
+.whats-new-content :where(pre) {
+  @apply my-3 overflow-x-auto rounded-lg bg-gray-900 p-3 text-xs text-gray-100;
+}
+
+.whats-new-content :where(pre) :where(code) {
+  @apply bg-transparent p-0 text-inherit;
+}
+
+.whats-new-content :where(hr) {
+  @apply my-4 border-t border-gray-200;
+}
+
+.whats-new-content :where(mark) {
+  @apply rounded px-0.5;
+}
+
+.whats-new-content :where(table) {
+  @apply my-3 w-full border-collapse text-left text-sm;
+}
+
+.whats-new-content :where(th, td) {
+  @apply border border-gray-200 px-2.5 py-1.5;
+}
+
+.whats-new-content :where(th) {
+  @apply bg-gray-50 font-semibold text-gray-900;
+}
+
+.whats-new-content :where(img) {
+  @apply my-3 max-w-full rounded-lg;
+}
+
+/* TipTap's own wrapper must not clip the editing surface. */
+.whats-new-content.ProseMirror {
+  @apply outline-none;
+}
