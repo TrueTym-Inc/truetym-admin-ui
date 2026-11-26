@@ -5,6 +5,7 @@ import '@/app/globals.css';
 
 import React from 'react';
 import QueryProvider from '@/providers/query-provider';
+import { Toaster } from 'sonner';
 
 import { ThemeProvider } from '@/components/ui/theme-provider';
 import StoreProvider from '@/app/StoreProvider';
@@ -42,7 +43,7 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               {children}
-              {/* <Toaster /> */}
+              <Toaster position="top-right" richColors />
             </ThemeProvider>
           </StoreProvider>
         </QueryProvider>

@@ -5,11 +5,11 @@ import Sidebar from '@/components/shared/Sidebar';
 
 export default function AdminContentLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <div className="flex min-h-screen bg-[#fcfcf9]">
+    <div className="min-h-screen overflow-x-hidden bg-[#fcfcf9]">
       <Sidebar />
-      <div className="ml-70 flex flex-1 flex-col">
+      <div className="ml-70 flex min-h-screen min-w-0 flex-col">
         <Navbar />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="min-w-0 flex-1">{children}</main>
       </div>
     </div>
   );

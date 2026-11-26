@@ -64,8 +64,14 @@ export function canOffboardEmployee(status: number, deleted?: number): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// GET /organisation/employees
+// GET /organisations/:orgId/employees
 // ---------------------------------------------------------------------------
+// Legacy list. The admin Employees screen uses fetchAdminEmployees (below) instead.
+export interface FetchEmployeesOptions {
+  /** 'employee' → types 100 + 103 (default), 'contractor' → 101 + 102 */
+  employeeSection?: 'employee' | 'contractor';
+}
+
 export async function fetchEmployees(
   organizationId: string,
   pageNumber: number = 1,
@@ -77,22 +83,23 @@ export async function fetchEmployees(
   orderBy: string = 'ASC',
   status: string = '',
   p0: any = 0,
+  options: FetchEmployeesOptions = {},
 ): Promise<EmployeesResponse> {
   try {
     const params = new URLSearchParams({
-      code: code,
-      name: name,
-      email: email,
-      fieldName: fieldName,
-      orderBy: orderBy,
-      status: status,
+      code,
+      name,
+      email,
+      fieldName,
+      orderBy,
+      status,
       pageNumber: pageNumber.toString(),
       pageSize: pageSize.toString(),
-      delete: p0,
+      delete: String(p0),
+      employeeSection: options.employeeSection ?? 'employee',
     });
 
     const url = `${API_BASE_URL}/organisations/${organizationId}/employees?${params.toString()}`;
-    console.log('Fetching employees from:', url);
 
     const response = await fetch(url, {
       method: 'GET',
@@ -105,13 +112,56 @@ export async function fetchEmployees(
       throw new Error(`API returned ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('fetchEmployees error:', errorMessage);
     throw new Error(`Failed to fetch employees: ${errorMessage}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// GET /organisations/:orgId/employees/admin-list  (admin panel list)
+// ---------------------------------------------------------------------------
+export interface AdminEmployeeListParams {
+  pageNumber: number;
+  pageSize: number;
+  /** Matches name, email, phone, employee code */
+  search?: string;
+  /** 100 = Employees tab (100 + 103), 101 = Contractors tab (101 + 102) */
+  type?: 100 | 101;
+  /** UserStatusEnum: 100 Invited, 101 Active, 102 Offboarded. Omit for all. */
+  status?: number | '';
+  includeDeleted?: boolean;
+  fieldName?: 'created_at' | 'joining_date' | 'display_name' | 'user_code';
+  orderBy?: 'ASC' | 'DESC';
+}
+
+export async function fetchAdminEmployees(
+  organizationId: string,
+  p: AdminEmployeeListParams,
+): Promise<EmployeesResponse> {
+  const qs = new URLSearchParams({
+    pageNumber: String(p.pageNumber),
+    pageSize: String(p.pageSize),
+    search: p.search?.trim() ?? '',
+    type: p.type ? String(p.type) : '',
+    status: p.status === undefined || p.status === '' ? '' : String(p.status),
+    delete: String(Boolean(p.includeDeleted)),
+    fieldName: p.fieldName ?? 'created_at',
+    orderBy: p.orderBy ?? 'DESC',
+  });
+
+  const response = await fetch(
+    `${API_BASE_URL}/organisations/${organizationId}/employees/admin-list?${qs.toString()}`,
+    { method: 'GET', headers: getHeaders() },
+  );
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) {
+    throw new Error(data?.message?.join(', ') || `Failed to fetch employees (${response.status})`);
+  }
+  return { ...data, totalItems: Number(data.totalItems ?? 0) };
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +185,6 @@ export async function fetchEmployeeList(
 
     // Adjust the prefix if your organisation controller uses a different path.
     const url = `${API_BASE_URL}/organisation/${organisationId}/employees?${qs.toString()}`;
-    console.log('Fetching employees at:', url);
 
     const response = await fetch(url, { method: 'GET', headers: getHeaders() });
     if (!response.ok) {
